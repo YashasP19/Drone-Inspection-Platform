@@ -23,19 +23,21 @@ load_dotenv()
 GROQ_MODEL = "llama-3.3-70b-versatile"
 GROQ_VISION_MODEL = "meta-llama/llama-4-scout-17b-16e-instruct"
 
-# Google Drive share links never include a literal file extension, so we also
-# match on Drive's own URL shape (file/d/, /d/<id>, uc?export=download, etc.)
-# in addition to obvious extensions/keywords.
-VIDEO_MARKERS = [
-    "video", ".mp4", ".mov", ".avi", ".mkv", ".webm", "presentation",
-    "file/d/", "/d/", "uc?export=download", "uc?id=",
-]
+# Google Drive share links never include a literal file extension, so for the
+# asset's raw folder/file link we also match on Drive's own "single file" URL
+# shape (file/d/, /d/<id>) in addition to obvious extensions/keywords.
+# NOTE: this shape check must NOT be applied to the `images` list — those are
+# already-resolved, mimeType-verified image download URLs from
+# /api/gdrive-images (they legitimately look like uc?export=download&id=...),
+# so matching Drive URL shape there produces false positives on real photos.
+VIDEO_MARKERS = ["video", ".mp4", ".mov", ".avi", ".mkv", ".webm", "presentation"]
+VIDEO_LINK_SHAPE_MARKERS = VIDEO_MARKERS + ["file/d/", "/d/"]
 
 
 def is_video_resource(gdrive_link: str, images: List[str]) -> bool:
     link = (gdrive_link or "").lower()
     imgs = [str(i).lower() for i in images]
-    if link and any(m in link for m in VIDEO_MARKERS):
+    if link and any(m in link for m in VIDEO_LINK_SHAPE_MARKERS):
         return True
     return any(any(m in img for m in VIDEO_MARKERS) for img in imgs)
 
@@ -286,22 +288,26 @@ def defect_detection_node(state: AgentState) -> Dict[str, Any]:
 Asset: "{state['asset_name']}"
 Prior image analysis: suitability={img.get('suitability')}, sensor={img.get('sensor_type')}
 
-Look closely at the attached drone image(s) and identify only the structural defects you can
+Look closely at the attached drone image(s) and identify EVERY distinct defect instance you can
 actually observe in them, such as:
 - Concrete cracks, spalling, delamination
 - Corrosion / rust on steel elements
 - Misalignment or settlement
 - Thermal anomalies (hot spots, moisture intrusion)
 
-If you see no visible defects, return an empty "defects_found" list and total_count 0 — do not
-invent defects that aren't visible in the image(s).
+Do not stop after the first or most obvious defect — scan the full frame (all pillars, girders,
+surfaces, edges) and report each separate crack/corrosion patch/anomaly you can see as its own
+entry in "defects_found", even if several are the same type (e.g. two separate cracks should be
+two separate entries with their own location). If you see no visible defects, return an empty
+"defects_found" list and total_count 0 — do not invent defects that aren't visible in the image(s).
 
 Reply ONLY with a JSON object:
 {{
   "defects_found": [
-    {{"type": "Concrete shear crack", "estimated_size": "1.8mm width, 28cm length", "location": "North pillar foundation"}}
+    {{"type": "Concrete shear crack", "estimated_size": "1.8mm width, 28cm length", "location": "North pillar foundation"}},
+    {{"type": "Steel girder corrosion", "estimated_size": "~30cm patch", "location": "East span, lower flange"}}
   ],
-  "total_count": 1,
+  "total_count": 2,
   "reasoning": "...",
   "confidence_score": 85
 }}"""
@@ -312,17 +318,35 @@ Reply ONLY with a JSON object:
     except Exception as e:
         name = state["asset_name"].lower()
         if "solar" in name or "panel" in name:
-            defects = [{"type": "Thermal hotspot (cell shunting)", "estimated_size": "18cm × 18cm", "location": "String 4, Row 11"}]
+            defects = [
+                {"type": "Thermal hotspot (cell shunting)", "estimated_size": "18cm × 18cm", "location": "String 4, Row 11"},
+                {"type": "Panel surface soiling", "estimated_size": "~0.3m²", "location": "String 6, Row 3"}
+            ]
         elif "wind" in name or "turbine" in name:
-            defects = [{"type": "Blade leading-edge erosion", "estimated_size": "~40cm span", "location": "Blade C, 80% radius"}]
+            defects = [
+                {"type": "Blade leading-edge erosion", "estimated_size": "~40cm span", "location": "Blade C, 80% radius"},
+                {"type": "Surface gel-coat crack", "estimated_size": "~12cm length", "location": "Blade A, 55% radius"}
+            ]
         elif "bridge" in name or "viaduct" in name:
-            defects = [{"type": "Concrete shear crack", "estimated_size": "1.8mm × 28cm", "location": "North pillar foundation"}]
+            defects = [
+                {"type": "Concrete shear crack", "estimated_size": "1.8mm × 28cm", "location": "North pillar foundation"},
+                {"type": "Steel girder corrosion", "estimated_size": "~30cm patch", "location": "East span, lower flange"}
+            ]
         elif "road" in name or "highway" in name:
-            defects = [{"type": "Longitudinal fatigue crack", "estimated_size": "3mm × 4.2m", "location": "Lane 2, Km 12.4"}]
+            defects = [
+                {"type": "Longitudinal fatigue crack", "estimated_size": "3mm × 4.2m", "location": "Lane 2, Km 12.4"},
+                {"type": "Surface pothole", "estimated_size": "~25cm diameter", "location": "Lane 1, Km 12.6"}
+            ]
         elif "dam" in name or "reservoir" in name:
-            defects = [{"type": "Surface seepage stain", "estimated_size": "~0.5m²", "location": "Left abutment, Elev. 142m"}]
+            defects = [
+                {"type": "Surface seepage stain", "estimated_size": "~0.5m²", "location": "Left abutment, Elev. 142m"},
+                {"type": "Surface hairline crack", "estimated_size": "1mm × 1.5m", "location": "Spillway wall, Elev. 138m"}
+            ]
         else:
-            defects = [{"type": "Surface longitudinal crack", "estimated_size": "1.2mm width, 22cm length", "location": "Segment 3, Bay C"}]
+            defects = [
+                {"type": "Surface longitudinal crack", "estimated_size": "1.2mm width, 22cm length", "location": "Segment 3, Bay C"},
+                {"type": "Surface corrosion patch", "estimated_size": "~20cm patch", "location": "Segment 5, Bay A"}
+            ]
         data = {
             "defects_found": defects,
             "total_count": len(defects),

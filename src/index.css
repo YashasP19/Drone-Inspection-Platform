@@ -115,3 +115,87 @@ body {
   border-color: rgba(109, 40, 217, 0.85);
   box-shadow: 0 28px 60px -10px rgba(109, 40, 217, 0.45);
 }
+
+/* Custom Glassmorphism for App Cards (Majority White, Very Light Purple in Bottom-Right Corner) */
+.glass-card-app,
+.glass-card-team,
+.glass-card-reports {
+  background: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.78) 0%,
+    rgba(255, 255, 255, 0.68) 55%,
+    rgba(244, 240, 255, 0.45) 85%,
+    rgba(224, 212, 254, 0.35) 100%
+  );
+  backdrop-filter: blur(28px) saturate(140%);
+  -webkit-backdrop-filter: blur(28px) saturate(140%);
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  box-shadow: 
+    0 12px 32px 0 rgba(109, 40, 217, 0.05),
+    inset 0 -1px 1px 0 rgba(224, 212, 254, 0.25);
+  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  position: relative;
+  overflow: hidden;
+}
+
+.glass-card-app::before,
+.glass-card-team::before,
+.glass-card-reports::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 45%;
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.3) 0%,
+    rgba(255, 255, 255, 0) 100%
+  );
+  pointer-events: none;
+}
+
+.glass-card-app:hover,
+.glass-card-team:hover,
+.glass-card-reports:hover {
+  background: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.88) 0%,
+    rgba(255, 255, 255, 0.78) 55%,
+    rgba(244, 240, 255, 0.60) 85%,
+    rgba(224, 212, 254, 0.48) 100%
+  );
+  border-color: rgba(255, 255, 255, 0.8);
+  box-shadow: 
+    0 20px 45px -10px rgba(109, 40, 217, 0.12),
+    0 0 30px 0 rgba(184, 175, 238, 0.25);
+  transform: translateY(-5px) scale(1.012);
+}
+
+/* Glass inner panel for card stats, table rows, footers */
+.glass-inner-panel {
+  background: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.55) 0%,
+    rgba(245, 243, 255, 0.35) 100%
+  );
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.5);
+}
+
+/* Glass modal container */
+.glass-modal {
+  background: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.95) 0%,
+    rgba(248, 246, 255, 0.90) 60%,
+    rgba(235, 226, 254, 0.85) 100%
+  );
+  backdrop-filter: blur(35px) saturate(160%);
+  -webkit-backdrop-filter: blur(35px) saturate(160%);
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  box-shadow: 
+    0 30px 70px -15px rgba(30, 18, 53, 0.25),
+    0 0 45px rgba(184, 175, 238, 0.25);
+}

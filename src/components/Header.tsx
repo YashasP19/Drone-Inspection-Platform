@@ -70,9 +70,8 @@ export default function Header({ onSignInClick, isLoggedIn, onSignOut }: HeaderP
   return (
     <header className="fixed top-4 left-0 right-0 z-50 flex justify-center px-4 pointer-events-none">
       <div
-        className={`pointer-events-auto max-w-5xl w-full bg-white/85 backdrop-blur-xl border border-[#8B5CF6]/20 rounded-full px-4 sm:px-6 py-2.5 shadow-[0_12px_40px_rgba(76,29,149,0.15)] flex items-center justify-between transition-all duration-300 ${
-          isScrolled ? "scale-[0.98] shadow-[0_15px_45px_rgba(76,29,149,0.2)]" : ""
-        }`}
+        className={`pointer-events-auto max-w-5xl w-full bg-white/85 backdrop-blur-xl border border-[#8B5CF6]/20 rounded-full px-4 sm:px-6 py-2.5 shadow-[0_12px_40px_rgba(76,29,149,0.15)] flex items-center justify-between transition-all duration-300 ${isScrolled ? "scale-[0.98] shadow-[0_15px_45px_rgba(76,29,149,0.2)]" : ""
+          }`}
       >
         {/* Brand Logo */}
         <motion.a
@@ -93,26 +92,21 @@ export default function Header({ onSignInClick, isLoggedIn, onSignOut }: HeaderP
           <a
             href="#"
             onClick={() => setActiveTab("home")}
-            className={`flex items-center space-x-2 text-xs font-bold px-4 py-1.5 rounded-full transition-all duration-300 ${
-              activeTab === "home"
+            className={`text-xs font-bold px-4 py-1.5 rounded-full transition-all duration-300 ${activeTab === "home"
                 ? "bg-[#C4BDF3] text-[#1E1235] shadow-sm"
                 : "text-[#362758] hover:bg-black/5"
-            }`}
+              }`}
           >
-            <span>Home</span>
-            <span className="w-4 h-4 rounded-full bg-[#1E1235] text-white text-[10px] font-bold flex items-center justify-center">
-              4
-            </span>
+            Home
           </a>
 
           <a
             href="#products"
             onClick={() => setActiveTab("products")}
-            className={`text-xs font-bold px-4 py-1.5 rounded-full transition-all duration-300 ${
-              activeTab === "products"
+            className={`text-xs font-bold px-4 py-1.5 rounded-full transition-all duration-300 ${activeTab === "products"
                 ? "bg-[#C4BDF3] text-[#1E1235] shadow-sm"
                 : "text-[#362758] hover:bg-black/5"
-            }`}
+              }`}
           >
             Products
           </a>
@@ -120,11 +114,10 @@ export default function Header({ onSignInClick, isLoggedIn, onSignOut }: HeaderP
           <a
             href="#solutions"
             onClick={() => setActiveTab("solutions")}
-            className={`text-xs font-bold px-4 py-1.5 rounded-full transition-all duration-300 ${
-              activeTab === "solutions"
+            className={`text-xs font-bold px-4 py-1.5 rounded-full transition-all duration-300 ${activeTab === "solutions"
                 ? "bg-[#C4BDF3] text-[#1E1235] shadow-sm"
                 : "text-[#362758] hover:bg-black/5"
-            }`}
+              }`}
           >
             Solutions
           </a>
@@ -132,11 +125,10 @@ export default function Header({ onSignInClick, isLoggedIn, onSignOut }: HeaderP
           <a
             href="#pricing"
             onClick={() => setActiveTab("pricing")}
-            className={`text-xs font-bold px-4 py-1.5 rounded-full transition-all duration-300 ${
-              activeTab === "pricing"
+            className={`text-xs font-bold px-4 py-1.5 rounded-full transition-all duration-300 ${activeTab === "pricing"
                 ? "bg-[#C4BDF3] text-[#1E1235] shadow-sm"
                 : "text-[#362758] hover:bg-black/5"
-            }`}
+              }`}
           >
             Pricing
           </a>
@@ -192,14 +184,10 @@ export default function Header({ onSignInClick, isLoggedIn, onSignOut }: HeaderP
                     setActiveTab("home");
                     setIsOpen(false);
                   }}
-                  className={`text-sm font-semibold py-2 px-3 rounded-xl flex justify-between items-center ${
-                    activeTab === "home" ? "bg-[#C4BDF3]/40 text-[#1E1235]" : "text-[#1E1235] hover:bg-black/5"
-                  }`}
+                  className={`text-sm font-semibold py-2 px-3 rounded-xl ${activeTab === "home" ? "bg-[#C4BDF3]/40 text-[#1E1235]" : "text-[#1E1235] hover:bg-black/5"
+                    }`}
                 >
-                  <span>Home</span>
-                  <span className="w-5 h-5 rounded-full bg-[#1E1235] text-white text-[10px] font-bold flex items-center justify-center">
-                    4
-                  </span>
+                  Home
                 </a>
                 <a
                   href="#products"
@@ -207,9 +195,8 @@ export default function Header({ onSignInClick, isLoggedIn, onSignOut }: HeaderP
                     setActiveTab("products");
                     setIsOpen(false);
                   }}
-                  className={`text-sm font-semibold py-2 px-3 rounded-xl ${
-                    activeTab === "products" ? "bg-[#C4BDF3]/40 text-[#1E1235]" : "text-[#1E1235] hover:bg-black/5"
-                  }`}
+                  className={`text-sm font-semibold py-2 px-3 rounded-xl ${activeTab === "products" ? "bg-[#C4BDF3]/40 text-[#1E1235]" : "text-[#1E1235] hover:bg-black/5"
+                    }`}
                 >
                   Products
                 </a>
@@ -219,9 +206,8 @@ export default function Header({ onSignInClick, isLoggedIn, onSignOut }: HeaderP
                     setActiveTab("solutions");
                     setIsOpen(false);
                   }}
-                  className={`text-sm font-semibold py-2 px-3 rounded-xl ${
-                    activeTab === "solutions" ? "bg-[#C4BDF3]/40 text-[#1E1235]" : "text-[#1E1235] hover:bg-black/5"
-                  }`}
+                  className={`text-sm font-semibold py-2 px-3 rounded-xl ${activeTab === "solutions" ? "bg-[#C4BDF3]/40 text-[#1E1235]" : "text-[#1E1235] hover:bg-black/5"
+                    }`}
                 >
                   Solutions
                 </a>
@@ -231,9 +217,8 @@ export default function Header({ onSignInClick, isLoggedIn, onSignOut }: HeaderP
                     setActiveTab("pricing");
                     setIsOpen(false);
                   }}
-                  className={`text-sm font-semibold py-2 px-3 rounded-xl ${
-                    activeTab === "pricing" ? "bg-[#C4BDF3]/40 text-[#1E1235]" : "text-[#1E1235] hover:bg-black/5"
-                  }`}
+                  className={`text-sm font-semibold py-2 px-3 rounded-xl ${activeTab === "pricing" ? "bg-[#C4BDF3]/40 text-[#1E1235]" : "text-[#1E1235] hover:bg-black/5"
+                    }`}
                 >
                   Pricing
                 </a>

@@ -66,7 +66,7 @@ export default function CaptureMethods() {
   const IconComponent = active.icon;
 
   return (
-    <section id="products" className="py-24 bg-gradient-to-b from-[#140F23] via-[#1A132E] to-[#120D20] relative overflow-hidden text-[#E2DEFA]">
+    <section className="py-24 bg-gradient-to-b from-[#140F23] via-[#1A132E] to-[#120D20] relative overflow-hidden text-[#E2DEFA]">
       {/* Background Soft Periwinkle Ambient Glow */}
       <div className="absolute top-1/2 left-0 -translate-y-1/2 w-[500px] h-[500px] bg-[#C4BDF3]/15 rounded-full blur-[140px] pointer-events-none" />
       <div className="absolute bottom-0 right-0 w-[450px] h-[450px] bg-[#8B5CF6]/15 rounded-full blur-[130px] pointer-events-none" />

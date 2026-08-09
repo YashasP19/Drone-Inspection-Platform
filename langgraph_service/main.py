@@ -8,6 +8,7 @@ from pydantic import BaseModel
 from typing import List, Optional
 
 from agent_graph import build_inspection_graph
+from yolo_detector import detect_cracks
 
 app = FastAPI(title="LangGraph Infrastructure Inspection Service")
 
@@ -25,6 +26,9 @@ class InspectionRequest(BaseModel):
     asset_name: str
     gdrive_link: str
     images: Optional[List[str]] = []
+
+class CrackDetectRequest(BaseModel):
+    image_url: str
 
 # Instantiate the compiled graph
 graph = build_inspection_graph()
@@ -120,6 +124,19 @@ async def stream_inspection(req: InspectionRequest):
             yield json.dumps({"event": "error", "message": str(e)}) + "\n"
 
     return StreamingResponse(event_generator(), media_type="text/event-stream")
+
+@app.post("/detect/crack")
+async def detect_crack(req: CrackDetectRequest):
+    """
+    Runs the pretrained YOLOv8 crack model on a single image, independently of the
+    agent pipeline. Called asynchronously by the Node backend after an inspection
+    completes, so it never blocks /inspect/stream.
+    """
+    try:
+        detections = await asyncio.to_thread(detect_cracks, req.image_url)
+        return {"detections": detections}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 if __name__ == "__main__":
     import uvicorn

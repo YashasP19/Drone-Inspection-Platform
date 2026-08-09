@@ -1,5 +1,19 @@
 import { useEffect, useMemo, useState } from "react";
-import { UserPlus, Shield, Trash2, Edit2, X, Folder, ClipboardCheck } from "lucide-react";
+import {
+  UserPlus,
+  Shield,
+  Trash2,
+  Edit2,
+  X,
+  Folder,
+  ClipboardCheck,
+  Users,
+  CheckCircle2,
+  Activity,
+  Mail,
+  Sparkles,
+  Layers
+} from "lucide-react";
 
 interface TeamMember {
   id: string;
@@ -98,6 +112,18 @@ export default function TeamView() {
     return { assetCount: memberAssets.length, inspectionCount };
   };
 
+  const overviewStats = useMemo(() => {
+    const activeCount = members.filter((m) => m.status === "Active").length;
+    const totalAssignedAssets = assets.filter((a) => a.assignedTo).length;
+    const totalRuns = inspections.length;
+    return {
+      total: members.length,
+      active: activeCount,
+      assignedAssets: totalAssignedAssets,
+      runs: totalRuns
+    };
+  }, [members, assets, inspections]);
+
   const handleOpenAddModal = () => {
     setCurrentMember(null);
     setName("");
@@ -117,12 +143,12 @@ export default function TeamView() {
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm("Remove this team member?")) return;
+    if (!confirm("Are you sure you want to remove this team member?")) return;
     try {
       await fetch(`http://localhost:5001/team/${id}`, { method: "DELETE" });
       fetchAll();
     } catch (err) {
-      console.error("Error removing team member:", err);
+      console.error("Error deleting member:", err);
     }
   };
 
@@ -146,135 +172,225 @@ export default function TeamView() {
       setIsModalOpen(false);
       fetchAll();
     } catch (err) {
-      console.error("Error saving team member:", err);
+      console.error("Error saving member:", err);
     }
   };
 
   return (
-    <div className="space-y-6 text-left relative">
-      <div className="flex justify-between items-start">
+    <div className="space-y-8 text-left relative">
+      {/* Header Banner */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h2 className="text-xl font-bold text-white">Team Members</h2>
-          <p className="text-xs text-gray-500 mt-1">Manage project pilots, quality analysts, engineers, and organization permission levels.</p>
+          <div className="inline-flex items-center space-x-2 px-3 py-1 rounded-full bg-[#8B5CF6]/15 border border-[#8B5CF6]/30 text-[#6D28D9] text-xs font-bold mb-2 backdrop-blur-md">
+            <Sparkles className="w-3.5 h-3.5 text-[#8B5CF6]" />
+            <span>Organization Management</span>
+          </div>
+          <h2 className="text-3xl font-black text-[#1E1235] tracking-tight">Team & Roles</h2>
+          <p className="text-xs text-[#5B4B7C] mt-1 font-medium max-w-xl">
+            Manage infrastructure inspect team members, assign asset scopes, and allocate role permissions across the sky audit platform.
+          </p>
         </div>
         <button
           onClick={handleOpenAddModal}
-          className="flex items-center space-x-1.5 px-4 py-2 bg-white text-black hover:bg-neutral-200 text-xs font-bold rounded-xl transition-all shadow-[0_0_15px_rgba(255,255,255,0.05)]"
+          className="flex items-center space-x-2 px-5 py-3 bg-gradient-to-r from-[#6D28D9] via-[#8B5CF6] to-[#A78BFA] text-white text-xs font-extrabold rounded-2xl transition-all shadow-[0_6px_20px_rgba(109,40,217,0.35)] hover:shadow-[0_10px_28px_rgba(109,40,217,0.5)] hover:-translate-y-0.5"
         >
-          <UserPlus className="w-3.5 h-3.5" />
+          <UserPlus className="w-4 h-4" />
           <span>Invite Member</span>
         </button>
       </div>
 
-      <div className="bg-neutral-950 border border-white/10 rounded-2xl overflow-hidden shadow-2xl">
-        <div className="p-4 bg-white/5 border-b border-white/10 flex justify-between items-center">
-          <h3 className="text-xs font-bold text-white uppercase tracking-wider">Active Workspace Members</h3>
-          <span className="text-[10px] text-gray-400 font-semibold font-mono">
-            {loading ? "Loading..." : `${members.length} Users`}
-          </span>
+      {/* Top Glass Metric KPI Cards */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="glass-card-team rounded-3xl p-4 sm:p-5 flex items-center space-x-4">
+          <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-[#6D28D9] to-[#8B5CF6] text-white flex items-center justify-center shadow-lg shadow-[#8B5CF6]/25 shrink-0 ring-2 ring-white/70">
+            <Users className="w-6 h-6" />
+          </div>
+          <div>
+            <div className="text-[11px] font-bold text-[#5B4B7C] uppercase tracking-wider">Total Members</div>
+            <div className="text-2xl font-black text-[#1E1235] mt-0.5">{overviewStats.total}</div>
+          </div>
         </div>
-        {members.length === 0 && !loading ? (
-          <div className="p-8 text-center text-xs text-gray-500">No team members yet. Click Invite Member to add one.</div>
-        ) : (
-          <div className="divide-y divide-white/5">
-            {members.map((m) => {
-              const stats = statsFor(m.id);
-              return (
-                <div key={m.id} className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:bg-white/5 transition-colors">
-                  <div className="flex items-center space-x-3.5">
-                    <div className="w-9 h-9 rounded-full bg-white/5 border border-white/10 flex items-center justify-center font-bold text-xs text-white flex-shrink-0">
+
+        <div className="glass-card-team rounded-3xl p-4 sm:p-5 flex items-center space-x-4">
+          <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-600 text-white flex items-center justify-center shadow-lg shadow-emerald-500/25 shrink-0 ring-2 ring-white/70">
+            <CheckCircle2 className="w-6 h-6" />
+          </div>
+          <div>
+            <div className="text-[11px] font-bold text-[#5B4B7C] uppercase tracking-wider">Active Personnel</div>
+            <div className="text-2xl font-black text-[#1E1235] mt-0.5">{overviewStats.active}</div>
+          </div>
+        </div>
+
+        <div className="glass-card-team rounded-3xl p-4 sm:p-5 flex items-center space-x-4">
+          <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-[#8B5CF6] to-[#C4BDF3] text-white flex items-center justify-center shadow-lg shadow-[#8B5CF6]/25 shrink-0 ring-2 ring-white/70">
+            <Layers className="w-6 h-6 text-[#1E1235]" />
+          </div>
+          <div>
+            <div className="text-[11px] font-bold text-[#5B4B7C] uppercase tracking-wider">Assigned Assets</div>
+            <div className="text-2xl font-black text-[#1E1235] mt-0.5">{overviewStats.assignedAssets}</div>
+          </div>
+        </div>
+
+        <div className="glass-card-team rounded-3xl p-4 sm:p-5 flex items-center space-x-4">
+          <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-indigo-600 to-purple-600 text-white flex items-center justify-center shadow-lg shadow-indigo-600/25 shrink-0 ring-2 ring-white/70">
+            <Activity className="w-6 h-6" />
+          </div>
+          <div>
+            <div className="text-[11px] font-bold text-[#5B4B7C] uppercase tracking-wider">Total Inspection Runs</div>
+            <div className="text-2xl font-black text-[#1E1235] mt-0.5">{overviewStats.runs}</div>
+          </div>
+        </div>
+      </div>
+
+      {/* Team Member Glass Cards Grid */}
+      {loading ? (
+        <div className="glass-card-team rounded-3xl p-12 text-center text-[#5B4B7C] font-semibold">
+          <div className="inline-block w-8 h-8 border-3 border-[#6D28D9] border-t-transparent rounded-full animate-spin mb-3"></div>
+          <div>Loading team roster & glass card views...</div>
+        </div>
+      ) : (
+        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          {members.map((m) => {
+            const { assetCount, inspectionCount } = statsFor(m.id);
+            const isActive = m.status === "Active";
+            return (
+              <div key={m.id} className="glass-card-team rounded-3xl p-6 flex flex-col justify-between">
+                <div>
+                  {/* Avatar & Status Header */}
+                  <div className="flex justify-between items-start mb-4">
+                    <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-[#6D28D9] via-[#8B5CF6] to-[#C4BDF3] text-white font-black text-sm flex items-center justify-center shadow-lg shadow-[#8B5CF6]/30 ring-2 ring-white/80 shrink-0">
                       {initialsOf(m.name)}
                     </div>
-                    <div>
-                      <h4 className="text-xs font-bold text-white">{m.name}</h4>
-                      <p className="text-[10px] text-gray-500 mt-0.5">{m.email}</p>
-                    </div>
+                    <span
+                      className={`text-[10px] font-extrabold px-3 py-1 rounded-full backdrop-blur-md flex items-center space-x-1.5 shadow-sm ${
+                        isActive
+                          ? "bg-emerald-500/15 text-emerald-800 border border-emerald-500/35"
+                          : "bg-amber-500/15 text-amber-800 border border-amber-500/35"
+                      }`}
+                    >
+                      <span
+                        className={`w-1.5 h-1.5 rounded-full ${
+                          isActive ? "bg-emerald-500 animate-pulse" : "bg-amber-500"
+                        }`}
+                      />
+                      <span>{m.status}</span>
+                    </span>
                   </div>
 
-                  <div className="flex items-center justify-between sm:justify-end gap-5 text-[10px]">
-                    <span className="flex items-center space-x-1.5 text-gray-400 font-semibold">
-                      <Shield className="w-3.5 h-3.5" />
-                      <span>{m.role}</span>
+                  {/* Name & Contact Info */}
+                  <h3 className="text-base font-extrabold text-[#1E1235] tracking-tight">{m.name}</h3>
+                  <div className="flex items-center space-x-1.5 text-[11px] text-[#5B4B7C] font-medium mt-1">
+                    <Mail className="w-3.5 h-3.5 text-[#8B5CF6] shrink-0" />
+                    <span className="truncate">{m.email}</span>
+                  </div>
+
+                  {/* Role Glass Pill */}
+                  <div className="inline-flex items-center space-x-2 px-3.5 py-1.5 rounded-2xl bg-gradient-to-r from-[#8B5CF6]/20 via-[#C4BDF3]/30 to-[#8B5CF6]/15 text-[#4C1D95] border border-[#8B5CF6]/35 text-xs font-extrabold mt-4 shadow-sm backdrop-blur-md">
+                    <Shield className="w-3.5 h-3.5 text-[#6D28D9]" />
+                    <span>{m.role}</span>
+                  </div>
+                </div>
+
+                {/* Inner Glass Stats Panel & Action Buttons */}
+                <div className="mt-6 glass-inner-panel rounded-2xl p-3.5 flex items-center justify-between">
+                  <div className="flex items-center space-x-2.5 text-xs text-[#4A3B69] font-bold">
+                    <span
+                      className="flex items-center space-x-1.5 bg-white/50 px-2.5 py-1 rounded-xl border border-white/70 shadow-sm"
+                      title="Assigned Infrastructure Assets"
+                    >
+                      <Folder className="w-3.5 h-3.5 text-[#6D28D9]" />
+                      <span>{assetCount} assets</span>
                     </span>
-                    <span className="flex items-center space-x-1.5 text-gray-400 font-mono" title="Assets assigned">
-                      <Folder className="w-3.5 h-3.5" />
-                      <span>{stats.assetCount}</span>
+                    <span
+                      className="flex items-center space-x-1.5 bg-white/50 px-2.5 py-1 rounded-xl border border-white/70 shadow-sm"
+                      title="Total Inspection Runs"
+                    >
+                      <ClipboardCheck className="w-3.5 h-3.5 text-[#8B5CF6]" />
+                      <span>{inspectionCount} runs</span>
                     </span>
-                    <span className="flex items-center space-x-1.5 text-gray-400 font-mono" title="Inspections on assigned assets">
-                      <ClipboardCheck className="w-3.5 h-3.5" />
-                      <span>{stats.inspectionCount}</span>
-                    </span>
-                    <span className={`inline-flex px-2 py-0.5 rounded font-bold uppercase ${
-                      m.status === "Active" ? "bg-emerald-500/10 text-emerald-400" : "bg-white/10 text-gray-400"
-                    }`}>
-                      {m.status}
-                    </span>
+                  </div>
+
+                  <div className="flex items-center space-x-1.5">
                     <button
                       onClick={() => handleOpenEditModal(m)}
+                      className="p-2 bg-white/70 hover:bg-white border border-white/90 text-[#1E1235] hover:text-[#6D28D9] rounded-xl transition-all shadow-sm hover:shadow"
                       title="Edit Member"
-                      className="p-2 bg-white/5 rounded-lg border border-white/10 text-white hover:bg-white hover:text-black transition-all flex items-center justify-center"
                     >
                       <Edit2 className="w-3.5 h-3.5" />
                     </button>
                     <button
                       onClick={() => handleDelete(m.id)}
+                      className="p-2 bg-red-500/10 hover:bg-red-600 border border-red-500/20 text-red-600 hover:text-white rounded-xl transition-all shadow-sm hover:shadow"
                       title="Remove Member"
-                      className="p-2 bg-red-950/20 rounded-lg border border-red-500/20 text-red-400 hover:bg-red-500 hover:text-white transition-all flex items-center justify-center"
                     >
                       <Trash2 className="w-3.5 h-3.5" />
                     </button>
                   </div>
                 </div>
-              );
-            })}
-          </div>
-        )}
-      </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
 
+      {/* Invite/Edit Glass Modal */}
       {isModalOpen && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-6">
-          <div className="w-full max-w-md bg-neutral-950 border border-white/10 rounded-2xl p-6 shadow-2xl relative">
+        <div className="fixed -top-20 -bottom-20 -left-20 -right-20 bg-[#1E1235]/40 backdrop-blur-md z-50 flex items-center justify-center p-6">
+          <div className="w-full max-w-md glass-modal rounded-3xl p-7 shadow-2xl relative">
             <button
               onClick={() => setIsModalOpen(false)}
-              className="absolute top-4 right-4 text-gray-400 hover:text-white"
+              className="absolute top-5 right-5 p-1.5 rounded-full bg-white/50 border border-white/80 text-[#5B4B7C] hover:text-[#1E1235] hover:bg-white transition-all"
             >
               <X className="w-5 h-5" />
             </button>
-            <h3 className="text-lg font-bold text-white mb-6">
-              {currentMember ? "Edit Team Member" : "Invite Team Member"}
-            </h3>
+
+            <div className="flex items-center space-x-3 mb-6">
+              <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-[#6D28D9] to-[#8B5CF6] text-white flex items-center justify-center shadow-md">
+                <UserPlus className="w-5 h-5" />
+              </div>
+              <div>
+                <h3 className="text-lg font-black text-[#1E1235]">
+                  {currentMember ? "Edit Team Member" : "Invite Team Member"}
+                </h3>
+                <p className="text-xs text-[#5B4B7C] font-medium">
+                  {currentMember
+                    ? "Update personnel roles and operational status."
+                    : "Send an invitation to join your drone inspection workspace."}
+                </p>
+              </div>
+            </div>
 
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-1">
-                <label className="block text-[10px] uppercase font-bold tracking-widest text-gray-400">Name</label>
+                <label className="block text-[10px] uppercase font-bold tracking-widest text-[#5B4B7C]">Full Name</label>
                 <input
                   type="text"
                   required
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  placeholder="e.g. Priya Sharma"
-                  className="w-full px-4 py-2.5 bg-neutral-900 border border-white/10 rounded-xl text-xs text-white focus:outline-none focus:border-white transition-colors"
+                  placeholder="e.g. Dr. Priya Sharma"
+                  className="w-full px-4 py-2.5 bg-white/60 border border-white/90 rounded-xl text-xs font-semibold text-[#1E1235] placeholder-[#5B4B7C]/50 focus:outline-none focus:bg-white focus:border-[#6D28D9] transition-all backdrop-blur-md"
                 />
               </div>
 
               <div className="space-y-1">
-                <label className="block text-[10px] uppercase font-bold tracking-widest text-gray-400">Email</label>
+                <label className="block text-[10px] uppercase font-bold tracking-widest text-[#5B4B7C]">Email Address</label>
                 <input
                   type="email"
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder="priya.s@company.com"
-                  className="w-full px-4 py-2.5 bg-neutral-900 border border-white/10 rounded-xl text-xs text-white focus:outline-none focus:border-white transition-colors"
+                  placeholder="priya@firm.com"
+                  className="w-full px-4 py-2.5 bg-white/60 border border-white/90 rounded-xl text-xs font-semibold text-[#1E1235] placeholder-[#5B4B7C]/50 focus:outline-none focus:bg-white focus:border-[#6D28D9] transition-all backdrop-blur-md"
                 />
               </div>
 
               <div className="space-y-1">
-                <label className="block text-[10px] uppercase font-bold tracking-widest text-gray-400">Role</label>
+                <label className="block text-[10px] uppercase font-bold tracking-widest text-[#5B4B7C]">Role</label>
                 <select
                   value={role}
                   onChange={(e) => setRole(e.target.value)}
-                  className="w-full px-4 py-2.5 bg-neutral-900 border border-white/10 rounded-xl text-xs text-white focus:outline-none focus:border-white transition-colors"
+                  className="w-full px-4 py-2.5 bg-white/60 border border-white/90 rounded-xl text-xs font-semibold text-[#1E1235] focus:outline-none focus:bg-white focus:border-[#6D28D9] transition-all backdrop-blur-md"
                 >
                   {ROLES.map((r) => (
                     <option key={r} value={r}>{r}</option>
@@ -283,11 +399,11 @@ export default function TeamView() {
               </div>
 
               <div className="space-y-1">
-                <label className="block text-[10px] uppercase font-bold tracking-widest text-gray-400">Status</label>
+                <label className="block text-[10px] uppercase font-bold tracking-widest text-[#5B4B7C]">Status</label>
                 <select
                   value={status}
                   onChange={(e) => setStatus(e.target.value)}
-                  className="w-full px-4 py-2.5 bg-neutral-900 border border-white/10 rounded-xl text-xs text-white focus:outline-none focus:border-white transition-colors"
+                  className="w-full px-4 py-2.5 bg-white/60 border border-white/90 rounded-xl text-xs font-semibold text-[#1E1235] focus:outline-none focus:bg-white focus:border-[#6D28D9] transition-all backdrop-blur-md"
                 >
                   <option value="Active">Active</option>
                   <option value="Invited">Invited</option>
@@ -295,19 +411,19 @@ export default function TeamView() {
                 </select>
               </div>
 
-              <div className="pt-4 flex space-x-2">
+              <div className="pt-4 flex space-x-3">
                 <button
                   type="button"
                   onClick={() => setIsModalOpen(false)}
-                  className="flex-1 py-2.5 border border-white/10 text-white rounded-xl text-xs hover:bg-white/5 transition-all"
+                  className="flex-1 py-2.5 bg-white/60 border border-white/90 text-[#1E1235] rounded-xl text-xs font-bold hover:bg-white transition-all shadow-sm"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="flex-1 py-2.5 bg-white text-black font-bold rounded-xl text-xs hover:bg-neutral-200 transition-all"
+                  className="flex-1 py-2.5 bg-gradient-to-r from-[#6D28D9] to-[#8B5CF6] text-white font-extrabold rounded-xl text-xs hover:from-[#5B21B6] hover:to-[#7C3AED] transition-all shadow-lg shadow-[#8B5CF6]/30"
                 >
-                  {currentMember ? "Save Changes" : "Send Invite"}
+                  Save Member
                 </button>
               </div>
             </form>

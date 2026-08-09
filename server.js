@@ -134,10 +134,101 @@ const writeDB = (data) => {
   }
 };
 
+// Google Maps short links (maps.app.goo.gl, goo.gl/maps/...) never contain lat/lng in the
+// URL text itself — the coordinates only appear after following the HTTP redirect to the
+// full google.com/maps/... URL. The frontend can't do this itself (cross-origin redirect,
+// blocked by CORS), so we resolve it here before persisting the asset.
+const extractLatLngFromUrl = (url) => {
+  const patterns = [
+    /!3d(-?\d+\.\d+)!4d(-?\d+\.\d+)/,   // precise place marker (most accurate when present)
+    /@(-?\d+\.\d+),(-?\d+\.\d+)/,        // map view center
+    /[?&]q=(-?\d+\.\d+),(-?\d+\.\d+)/,   // ?q=lat,lng share links
+  ];
+  for (const re of patterns) {
+    const m = url.match(re);
+    if (m) return { lat: parseFloat(m[1]), lng: parseFloat(m[2]) };
+  }
+  return null;
+};
+
+const resolveLatLngFromMapLink = async (mapLink) => {
+  if (!mapLink) return null;
+  const direct = extractLatLngFromUrl(mapLink);
+  if (direct) return direct;
+  try {
+    const resp = await fetch(mapLink, { redirect: "follow" });
+    return extractLatLngFromUrl(resp.url);
+  } catch (err) {
+    console.error("Failed to resolve map link:", mapLink, err.message);
+    return null;
+  }
+};
+
 // 1. GET /assets - List all assets
 app.get("/assets", (req, res) => {
   const db = readDB();
   res.json(db.assets);
+});
+
+// GET /api/gdrive-images - List image files from a public Google Drive folder link
+// so drone photos already sitting in Drive can be pulled straight into the
+// inspection pipeline instead of manually re-uploading each one.
+app.get("/api/gdrive-images", async (req, res) => {
+  const link = req.query.link;
+  if (!link) return res.status(400).json({ error: "Missing 'link' query param" });
+
+  const apiKey = process.env.GOOGLE_DRIVE_API_KEY;
+  if (!apiKey) {
+    return res.status(500).json({ error: "GOOGLE_DRIVE_API_KEY is not configured on the server" });
+  }
+
+  const folderIdMatch = link.match(/folders\/([a-zA-Z0-9_-]+)/) || link.match(/[?&]id=([a-zA-Z0-9_-]+)/);
+  const folderId = folderIdMatch ? folderIdMatch[1] : null;
+  if (!folderId) {
+    return res.status(400).json({ error: "Could not extract a Drive folder ID from the provided link" });
+  }
+
+  try {
+    const query = encodeURIComponent(`'${folderId}' in parents and mimeType contains 'image/' and trashed = false`);
+    const driveUrl = `https://www.googleapis.com/drive/v3/files?q=${query}&fields=files(id,name,mimeType)&key=${apiKey}`;
+    const driveRes = await fetch(driveUrl);
+    const driveData = await driveRes.json();
+
+    if (driveData.error) {
+      return res.status(502).json({ error: driveData.error.message || "Google Drive API request failed" });
+    }
+
+    // Drive's "uc?export=download" link doesn't reliably load as a plain <img src=""> in the
+    // browser (it serves a redirect/interstitial rather than raw bytes for embedded requests),
+    // and neither our own YOLO service nor the browser should have to fight that per-request.
+    // So we download the actual bytes once here and re-serve them from our own /uploads, exactly
+    // like manually uploaded photos.
+    const uploadDir = path.join(__dirname, "uploads");
+    if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
+
+    const extFromMime = (mimeType) => {
+      const map = { "image/jpeg": ".jpg", "image/png": ".png", "image/webp": ".webp", "image/gif": ".gif" };
+      return map[mimeType] || path.extname("x.jpg");
+    };
+
+    const images = await Promise.all((driveData.files || []).map(async (f) => {
+      const mediaUrl = `https://www.googleapis.com/drive/v3/files/${f.id}?alt=media&key=${apiKey}`;
+      const mediaRes = await fetch(mediaUrl);
+      if (!mediaRes.ok) {
+        throw new Error(`Failed to download "${f.name}" from Drive (${mediaRes.status})`);
+      }
+      const buffer = Buffer.from(await mediaRes.arrayBuffer());
+      const ext = path.extname(f.name) || extFromMime(f.mimeType);
+      const filename = `${Date.now()}-gdrive-${f.id}${ext}`;
+      fs.writeFileSync(path.join(uploadDir, filename), buffer);
+      return { name: f.name, url: `http://localhost:5001/uploads/${filename}` };
+    }));
+
+    res.json({ images });
+  } catch (err) {
+    console.error("Error listing Drive folder images:", err);
+    res.status(500).json({ error: "Failed to list images from Google Drive folder: " + err.message });
+  }
 });
 
 // 2. GET /assets/:id - Get asset by id
@@ -151,10 +242,17 @@ app.get("/assets/:id", (req, res) => {
 });
 
 // 3. POST /assets - Create a new asset
-app.post("/assets", (req, res) => {
-  const { name, infrastructureType, location, thumbnail, inspectionPageId, gDriveLink, mapLink, lat, lng, status, assignedTo } = req.body;
+app.post("/assets", async (req, res) => {
+  const { name, infrastructureType, location, thumbnail, inspectionPageId, gDriveLink, mapLink, lat, lng, status, assignedTo, nextAppointmentDate } = req.body;
   if (!name || !infrastructureType || !location) {
     return res.status(400).json({ error: "Missing required fields (name, infrastructureType, location)" });
+  }
+
+  let finalLat = lat !== undefined ? lat : null;
+  let finalLng = lng !== undefined ? lng : null;
+  if (mapLink) {
+    const resolved = await resolveLatLngFromMapLink(mapLink);
+    if (resolved) { finalLat = resolved.lat; finalLng = resolved.lng; }
   }
 
   const db = readDB();
@@ -167,10 +265,11 @@ app.post("/assets", (req, res) => {
     inspectionPageId: inspectionPageId || "custom-inspect-id",
     gDriveLink: gDriveLink || "",
     mapLink: mapLink || "",
-    lat: lat !== undefined ? lat : null,
-    lng: lng !== undefined ? lng : null,
+    lat: finalLat,
+    lng: finalLng,
     status: status || "Passed",
     assignedTo: assignedTo || null,
+    nextAppointmentDate: nextAppointmentDate || null,
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString()
   };
@@ -181,7 +280,7 @@ app.post("/assets", (req, res) => {
 });
 
 // 4. PUT /assets/:id - Update an existing asset
-app.put("/assets/:id", (req, res) => {
+app.put("/assets/:id", async (req, res) => {
   const db = readDB();
   const assetIdx = db.assets.findIndex((a) => a.id === req.params.id);
   if (assetIdx === -1) {
@@ -189,7 +288,15 @@ app.put("/assets/:id", (req, res) => {
   }
 
   const existing = db.assets[assetIdx];
-  const { name, infrastructureType, location, thumbnail, inspectionPageId, gDriveLink, mapLink, lat, lng, status, assignedTo } = req.body;
+  const { name, infrastructureType, location, thumbnail, inspectionPageId, gDriveLink, mapLink, lat, lng, status, assignedTo, nextAppointmentDate } = req.body;
+
+  let finalLat = lat !== undefined ? lat : existing.lat;
+  let finalLng = lng !== undefined ? lng : existing.lng;
+  const nextMapLink = mapLink !== undefined ? mapLink : existing.mapLink;
+  if (nextMapLink && nextMapLink !== existing.mapLink) {
+    const resolved = await resolveLatLngFromMapLink(nextMapLink);
+    if (resolved) { finalLat = resolved.lat; finalLng = resolved.lng; }
+  }
 
   const updatedAsset = {
     ...existing,
@@ -199,11 +306,12 @@ app.put("/assets/:id", (req, res) => {
     thumbnail: thumbnail !== undefined ? thumbnail : existing.thumbnail,
     inspectionPageId: inspectionPageId !== undefined ? inspectionPageId : existing.inspectionPageId,
     gDriveLink: gDriveLink !== undefined ? gDriveLink : existing.gDriveLink,
-    mapLink: mapLink !== undefined ? mapLink : existing.mapLink,
-    lat: lat !== undefined ? lat : existing.lat,
-    lng: lng !== undefined ? lng : existing.lng,
+    mapLink: nextMapLink,
+    lat: finalLat,
+    lng: finalLng,
     status: status !== undefined ? status : existing.status,
     assignedTo: assignedTo !== undefined ? assignedTo : existing.assignedTo,
+    nextAppointmentDate: nextAppointmentDate !== undefined ? nextAppointmentDate : existing.nextAppointmentDate,
     updatedAt: new Date().toISOString()
   };
 
@@ -786,6 +894,33 @@ app.post("/api/inspections/stream", async (req, res) => {
   }
 });
 
+// 2b. Real YOLO crack detection on one image — called asynchronously by the frontend
+// after the (LLM-based) inspection pipeline finishes, so it never blocks /api/inspections/stream.
+app.post("/api/inspections/detect-crack", async (req, res) => {
+  const { imageUrl } = req.body;
+  if (!imageUrl) {
+    return res.status(400).json({ error: "Missing imageUrl" });
+  }
+
+  try {
+    const response = await fetch("http://localhost:8000/detect/crack", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ image_url: imageUrl })
+    });
+
+    if (!response.ok) {
+      const errText = await response.text();
+      return res.status(500).json({ error: `YOLO detection service error: ${errText}` });
+    }
+
+    const data = await response.json();
+    res.json(data);
+  } catch (err) {
+    res.status(500).json({ error: "Failed to connect to YOLO detection service: " + err.message });
+  }
+});
+
 // 3. Save completed inspection and create report
 app.post("/api/inspections/save", (req, res) => {
   const { assetId, agentStates, reportMarkdown, severity, nextInspectionDate } = req.body;
@@ -842,11 +977,53 @@ app.get("/api/inspections", (req, res) => {
   res.json(db.inspections || []);
 });
 
+// Delete single inspection
+app.delete("/api/inspections/:id", (req, res) => {
+  const db = readDB();
+  if (!db.inspections) db.inspections = [];
+  const idx = db.inspections.findIndex((i) => i.id === req.params.id);
+  if (idx !== -1) {
+    db.inspections.splice(idx, 1);
+    writeDB(db);
+  }
+  res.json({ message: "Inspection deleted" });
+});
+
+// Delete all inspections
+app.delete("/api/inspections", (req, res) => {
+  const db = readDB();
+  db.inspections = [];
+  writeDB(db);
+  res.json({ message: "All inspections cleared" });
+});
+
+
 // 5. Get list of reports
 app.get("/api/reports", (req, res) => {
   const db = readDB();
   res.json(db.reports || []);
 });
+
+// Delete single report
+app.delete("/api/reports/:id", (req, res) => {
+  const db = readDB();
+  if (!db.reports) db.reports = [];
+  const idx = db.reports.findIndex((r) => r.id === req.params.id);
+  if (idx !== -1) {
+    db.reports.splice(idx, 1);
+    writeDB(db);
+  }
+  res.json({ message: "Report deleted" });
+});
+
+// Delete all reports
+app.delete("/api/reports", (req, res) => {
+  const db = readDB();
+  db.reports = [];
+  writeDB(db);
+  res.json({ message: "All reports cleared" });
+});
+
 
 app.listen(PORT, () => {
   console.log(`Backend server running on http://localhost:${PORT}`);

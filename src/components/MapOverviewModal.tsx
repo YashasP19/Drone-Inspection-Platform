@@ -20,9 +20,9 @@ interface MapOverviewModalProps {
 
 const markerIcon = L.divIcon({
   className: "",
-  html: `<div style="width:14px;height:14px;border-radius:50%;background:#fff;border:2px solid #000;box-shadow:0 0 0 4px rgba(255,255,255,0.25)"></div>`,
-  iconSize: [14, 14],
-  iconAnchor: [7, 7]
+  html: `<div style="width:16px;height:16px;border-radius:50%;background:#6D28D9;border:2px solid #fff;box-shadow:0 0 0 4px rgba(109,40,217,0.3)"></div>`,
+  iconSize: [16, 16],
+  iconAnchor: [8, 8]
 });
 
 export default function MapOverviewModal({ onClose }: MapOverviewModalProps) {
@@ -54,8 +54,7 @@ export default function MapOverviewModal({ onClose }: MapOverviewModalProps) {
     mapRef.current = map;
 
     L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-      attribution: '&copy; OpenStreetMap contributors',
-      className: "grayscale-tiles"
+      attribution: '&copy; OpenStreetMap contributors'
     }).addTo(map);
 
     if (located.length > 0) {
@@ -63,8 +62,8 @@ export default function MapOverviewModal({ onClose }: MapOverviewModalProps) {
       located.forEach((asset) => {
         const marker = L.marker([asset.lat, asset.lng], { icon: markerIcon }).addTo(map);
         marker.bindPopup(
-          `<div style="font-family:sans-serif"><strong>${asset.name}</strong><br/>${asset.infrastructureType}<br/>${asset.location}<br/>Status: ${asset.status}${
-            asset.mapLink ? `<br/><a href="${asset.mapLink}" target="_blank" rel="noopener noreferrer">Open in Google Maps</a>` : ""
+          `<div style="font-family:sans-serif;padding:2px"><strong>${asset.name}</strong><br/>${asset.infrastructureType}<br/>${asset.location}<br/>Status: ${asset.status}${
+            asset.mapLink ? `<br/><a href="${asset.mapLink}" target="_blank" rel="noopener noreferrer" style="color:#6D28D9;font-weight:bold">Open in Google Maps</a>` : ""
           }</div>`
         );
         markers.push(marker);
@@ -83,22 +82,22 @@ export default function MapOverviewModal({ onClose }: MapOverviewModalProps) {
   const unlocatedCount = assets.filter((a) => !(typeof a.lat === "number" && typeof a.lng === "number")).length;
 
   return (
-    <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-6">
-      <div className="w-full max-w-4xl bg-neutral-950 border border-white/10 rounded-2xl p-6 shadow-2xl relative">
+    <div className="fixed -top-20 -bottom-20 -left-20 -right-20 bg-[#1E1235]/40 backdrop-blur-md z-50 flex items-center justify-center p-6">
+      <div className="w-full max-w-4xl bg-white/90 border border-white rounded-3xl p-6 shadow-2xl relative backdrop-blur-2xl">
         <button
           onClick={onClose}
-          className="absolute top-4 right-4 text-gray-400 hover:text-white z-[1000]"
+          className="absolute top-4 right-4 text-[#5B4B7C] hover:text-[#1E1235] z-[1000]"
         >
           <X className="w-5 h-5" />
         </button>
-        <h3 className="text-lg font-bold text-white mb-1">Map Overview</h3>
-        <p className="text-xs text-gray-500 mb-4">
-          Assets pinned by their Google Maps link.
+        <h3 className="text-lg font-extrabold text-[#1E1235] mb-1">Map Overview</h3>
+        <p className="text-xs text-[#5B4B7C] mb-4 font-medium">
+          Assets pinned by their Google Maps location.
           {unlocatedCount > 0 && ` ${unlocatedCount} asset(s) have no map link yet.`}
         </p>
         <div
           ref={mapContainerRef}
-          className="w-full h-[60vh] rounded-xl overflow-hidden border border-white/10"
+          className="w-full h-96 rounded-2xl overflow-hidden border border-white/80 shadow-inner z-10"
         />
       </div>
     </div>

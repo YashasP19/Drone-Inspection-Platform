@@ -50,11 +50,11 @@ export default function App() {
         {/* Hero Section */}
         <Hero />
 
-        {/* Tabbed Capture Workflows */}
-        <CaptureMethods />
-
-        {/* Side-by-side CAD Slider */}
-        <BimSlider />
+        {/* Products Section (Capture Workflows & Raw Footage vs AI Detection Slider) */}
+        <div id="products">
+          <CaptureMethods />
+          <BimSlider />
+        </div>
 
         {/* Sector Solutions */}
         <Solutions />
