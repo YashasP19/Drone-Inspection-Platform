@@ -21,7 +21,10 @@ load_dotenv()
 # from the asset name/metadata alone.
 
 GROQ_MODEL = "llama-3.3-70b-versatile"
-GROQ_VISION_MODEL = "meta-llama/llama-4-scout-17b-16e-instruct"
+# meta-llama/llama-4-scout-17b-16e-instruct was deprecated by Groq (June 2026, 404s on this
+# account). qwen/qwen3.6-27b is Groq's current vision-capable replacement — verified working
+# with real image input against this account's key.
+GROQ_VISION_MODEL = "qwen/qwen3.6-27b"
 
 # Google Drive share links never include a literal file extension, so for the
 # asset's raw folder/file link we also match on Drive's own "single file" URL
@@ -114,6 +117,7 @@ def call_ai_vision(prompt: str, image_urls: List[str], timeout: float = 30.0, ma
             messages=[{"role": "user", "content": content}],
             temperature=0.3,
             max_tokens=2048,
+            reasoning_format="hidden",
         )
         try:
             response = future.result(timeout=timeout)
