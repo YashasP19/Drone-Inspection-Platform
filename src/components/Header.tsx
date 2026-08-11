@@ -83,7 +83,7 @@ export default function Header({ onSignInClick, isLoggedIn, onSignOut }: HeaderP
         >
           <LogoIcon className="w-8 h-8" />
           <span className="hidden sm:inline">
-            DRONE<span className="text-[#6D28D9]">INSPECTOR</span>
+            SKY<span className="bg-gradient-to-r from-[#8B5CF6] via-[#6D28D9] to-[#4C1D95] bg-clip-text text-transparent">AUDIT</span>
           </span>
         </motion.a>
 

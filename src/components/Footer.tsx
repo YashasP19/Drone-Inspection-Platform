@@ -20,14 +20,14 @@ export default function Footer() {
           <a href="#" className="flex items-center space-x-2 text-white font-extrabold text-2xl tracking-wider">
             <LogoIcon className="w-8 h-8" />
             <span>
-              DRONE<span className="text-[#C4BDF3]">INSPECTOR</span>
+              SKY<span className="text-[#C4BDF3]">AUDIT</span>
             </span>
           </a>
           <p className="text-[#C4BDF3]/80 text-xs leading-relaxed max-w-sm">
-            Drone Infrastructure Inspector runs drone imagery through a multi-agent AI pipeline to detect infrastructure defects and generate inspection reports — fast, consistent, and severity-ranked.
+            Sky Audit runs drone imagery through a multi-agent AI pipeline to detect infrastructure defects and generate inspection reports — fast, consistent, and severity-ranked.
           </p>
           <div className="text-[10px] text-[#C4BDF3]/60">
-            © 2026 Drone Infrastructure Inspector. All rights reserved.
+            © 2026 Sky Audit. All rights reserved.
           </div>
         </div>
 

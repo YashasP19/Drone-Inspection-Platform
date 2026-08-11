@@ -117,7 +117,11 @@ def call_ai_vision(prompt: str, image_urls: List[str], timeout: float = 30.0, ma
             messages=[{"role": "user", "content": content}],
             temperature=0.3,
             max_tokens=2048,
-            reasoning_format="hidden",
+            # qwen3.6-27b is a reasoning model — by default it burns 10-60s (and sometimes its
+            # whole token budget) on an internal "thinking" pass before answering, which blew
+            # through our timeout and occasionally returned empty content. Disabling reasoning
+            # brings this down to ~1-10s with no loss of JSON quality for this task.
+            reasoning_effort="none",
         )
         try:
             response = future.result(timeout=timeout)
@@ -132,7 +136,17 @@ def parse_json(text: str) -> Dict[str, Any]:
         text = text.split("```json")[1].split("```")[0].strip()
     elif "```" in text:
         text = text.split("```")[1].split("```")[0].strip()
-    return json.loads(text.strip())
+    text = text.strip()
+    try:
+        return json.loads(text)
+    except json.JSONDecodeError:
+        # Reasoning models occasionally leave stray text before/after the JSON object, or the
+        # response gets cut off mid-object if it ran out of tokens. Fall back to grabbing the
+        # outermost {...} span before giving up.
+        start, end = text.find("{"), text.rfind("}")
+        if start != -1 and end != -1 and end > start:
+            return json.loads(text[start:end + 1])
+        raise
 
 
 # ─── LangGraph State Schema ───────────────────────────────────────────────────
@@ -252,7 +266,7 @@ Reply ONLY with a JSON object using these exact keys:
 }}"""
 
     try:
-        text = call_ai_vision(prompt, images_raw, timeout=20.0)
+        text = call_ai_vision(prompt, images_raw, timeout=45.0)
         data = parse_json(text)
     except Exception as e:
         data = {
@@ -317,7 +331,7 @@ Reply ONLY with a JSON object:
 }}"""
 
     try:
-        text = call_ai_vision(prompt, images_raw, timeout=20.0)
+        text = call_ai_vision(prompt, images_raw, timeout=45.0)
         data = parse_json(text)
     except Exception as e:
         name = state["asset_name"].lower()

@@ -32,7 +32,7 @@ const plans = [
   {
     name: "Enterprise",
     price: "$100",
-    period: "",
+    period: "/mo",
     description: "For organizations with multi-site fleets and compliance needs.",
     features: [
       "Everything in Professional",
@@ -80,11 +80,10 @@ export default function Testimonials() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true, margin: "-60px" }}
               transition={{ duration: 0.6, delay: index * 0.15 }}
-              className={`group rounded-3xl p-8 flex flex-col relative cursor-pointer backdrop-blur-xl ${
-                plan.highlighted
+              className={`group rounded-3xl p-8 flex flex-col relative cursor-pointer backdrop-blur-xl ${plan.highlighted
                   ? "pricing-card-highlighted shadow-2xl md:scale-105"
                   : "pricing-card shadow-lg"
-              }`}
+                }`}
             >
               {plan.highlighted && (
                 <span className="absolute -top-3.5 left-1/2 -translate-x-1/2 bg-gradient-to-r from-[#6D28D9] via-[#7C3AED] to-[#8B5CF6] text-white text-[10px] uppercase font-bold tracking-widest px-4 py-1 rounded-full shadow-lg transition-transform duration-300 group-hover:-translate-y-1">

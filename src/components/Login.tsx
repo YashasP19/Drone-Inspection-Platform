@@ -125,7 +125,7 @@ export default function Login({ onLoginSuccess, onBackToHome }: LoginProps) {
         >
           <LogoIcon className="w-7 h-7 sm:w-8 sm:h-8 group-hover:scale-105 transition-transform" />
           <span>
-            DRONE<span className="text-[#C4BDF3]">INSPECTOR</span>
+            SKY<span className="text-[#C4BDF3]">AUDIT</span>
           </span>
         </button>
 
@@ -162,7 +162,7 @@ export default function Login({ onLoginSuccess, onBackToHome }: LoginProps) {
                 <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight leading-snug">
                   {isSignUp ? "Join " : "Welcome back to "}
                   <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#C4BDF3] via-[#E2DEFA] to-[#A78BFA]">
-                    DRONEINSPECTOR
+                    SKYAUDIT
                   </span>
                 </h1>
               </div>
