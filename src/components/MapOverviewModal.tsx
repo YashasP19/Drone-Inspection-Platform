@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { X } from "lucide-react";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
+import { API_BASE_URL } from "../config";
 
 interface Asset {
   id: string;
@@ -32,7 +33,7 @@ export default function MapOverviewModal({ onClose }: MapOverviewModalProps) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch("http://localhost:5001/assets")
+    fetch(`${API_BASE_URL}/assets`)
       .then((res) => res.json())
       .then((data) => setAssets(data))
       .catch((err) => console.error("Error fetching assets:", err))

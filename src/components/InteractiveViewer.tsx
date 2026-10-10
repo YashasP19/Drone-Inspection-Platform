@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { AlertTriangle, Video, ImageOff } from "lucide-react";
+import { PLACEHOLDER_IMAGE, onImageError } from "../config";
 
 export interface DetectionBox {
   id: string | number;
@@ -44,9 +45,7 @@ function isVideoUrl(url?: string): boolean {
 export default function InteractiveViewer({ inspectedAsset, imageUrl, customDetections }: InteractiveViewerProps) {
   const [activeDetection, setActiveDetection] = useState<DetectionBox | null>(null);
 
-  const rawUrl = imageUrl || (inspectedAsset?.thumbnail && !inspectedAsset.thumbnail.includes("unsplash")
-    ? inspectedAsset.thumbnail
-    : undefined);
+  const rawUrl = imageUrl || inspectedAsset?.thumbnail || PLACEHOLDER_IMAGE;
 
   const isVideo = isVideoUrl(rawUrl);
   const displayImageUrl = isVideo ? undefined : rawUrl;
@@ -88,6 +87,7 @@ export default function InteractiveViewer({ inspectedAsset, imageUrl, customDete
           <div className="relative w-full max-h-[440px] flex items-center justify-center rounded-2xl bg-black" style={{ minHeight: 280 }}>
             <img
               src={displayImageUrl}
+              onError={onImageError}
               alt="Uploaded Infrastructure Frame"
               className="max-h-[440px] max-w-full object-contain block"
             />

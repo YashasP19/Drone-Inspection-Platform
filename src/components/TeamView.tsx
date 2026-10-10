@@ -14,6 +14,7 @@ import {
   Sparkles,
   Layers
 } from "lucide-react";
+import { API_BASE_URL } from "../config";
 
 interface TeamMember {
   id: string;
@@ -68,9 +69,9 @@ export default function TeamView() {
     try {
       setLoading(true);
       const [teamRes, assetsRes, inspectionsRes] = await Promise.all([
-        fetch("http://localhost:5001/team"),
-        fetch("http://localhost:5001/assets"),
-        fetch("http://localhost:5001/api/inspections")
+        fetch(`${API_BASE_URL}/team`),
+        fetch(`${API_BASE_URL}/assets`),
+        fetch(`${API_BASE_URL}/api/inspections`)
       ]);
       setMembers(await teamRes.json());
       setAssets(await assetsRes.json());
@@ -145,7 +146,7 @@ export default function TeamView() {
   const handleDelete = async (id: string) => {
     if (!confirm("Are you sure you want to remove this team member?")) return;
     try {
-      await fetch(`http://localhost:5001/team/${id}`, { method: "DELETE" });
+      await fetch(`${API_BASE_URL}/team/${id}`, { method: "DELETE" });
       fetchAll();
     } catch (err) {
       console.error("Error deleting member:", err);
@@ -157,13 +158,13 @@ export default function TeamView() {
     const payload = { name, email, role, status };
     try {
       if (currentMember?.id) {
-        await fetch(`http://localhost:5001/team/${currentMember.id}`, {
+        await fetch(`${API_BASE_URL}/team/${currentMember.id}`, {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(payload)
         });
       } else {
-        await fetch("http://localhost:5001/team", {
+        await fetch(`${API_BASE_URL}/team`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(payload)

@@ -1,3 +1,4 @@
+import urllib.parse
 """
 Real crack detection using a pretrained YOLOv8 model (OpenSistemas/YOLOv8-crack-seg,
 100-epoch trained, box mAP50 ~0.79), downloaded to models/crack_pretrained.pt.
@@ -61,6 +62,18 @@ def _fetch_bytes(url: str, timeout: float) -> bytes:
 
 
 def _load_image(image_url: str, timeout: float = 15.0) -> Image.Image:
+    if "/uploads/" in image_url or image_url.startswith("uploads/"):
+        filename = urllib.parse.unquote(image_url.split("uploads/")[-1].lstrip("/"))
+        for candidate_dir in [
+            os.path.join(os.path.dirname(__file__), "..", "uploads"),
+            os.path.join(os.path.dirname(__file__), "uploads"),
+            "/app/uploads",
+            "uploads"
+        ]:
+            local_path = os.path.join(candidate_dir, filename)
+            if os.path.exists(local_path):
+                return Image.open(local_path).convert("RGB")
+
     if image_url.startswith("http://") or image_url.startswith("https://"):
         return Image.open(io.BytesIO(_fetch_bytes(image_url, timeout))).convert("RGB")
     return Image.open(image_url).convert("RGB")

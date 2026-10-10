@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Play, Database, ShieldAlert, Cpu, Terminal, Eye, CheckCircle2, Loader2, ArrowRight, Activity, Award } from "lucide-react";
+import { API_BASE_URL } from "../config";
 
 interface Asset {
   id: string;
@@ -48,7 +49,7 @@ export default function FlightsView({ onNavigateToInspection }: FlightsViewProps
   useEffect(() => {
     const fetchAssets = async () => {
       try {
-        const res = await fetch("http://localhost:5001/assets");
+        const res = await fetch(`${API_BASE_URL}/assets`);
         if (res.ok) {
           const data = await res.json();
           setAssets(data);
@@ -69,7 +70,7 @@ export default function FlightsView({ onNavigateToInspection }: FlightsViewProps
 
     const poll = async () => {
       try {
-        const res = await fetch("http://localhost:5001/ai-orchestration/status");
+        const res = await fetch(`${API_BASE_URL}/ai-orchestration/status`);
         if (!res.ok) throw new Error("Connection failed");
         const data = (await res.json()) as OrchestrationData;
         setPipelineData(data);
@@ -95,7 +96,7 @@ export default function FlightsView({ onNavigateToInspection }: FlightsViewProps
     setIsPipelineComplete(false);
     setLogs(["Orchestrator: Connecting and initializing agents..."]);
     try {
-      await fetch("http://localhost:5001/ai-orchestration/start", {
+      await fetch(`${API_BASE_URL}/ai-orchestration/start`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ asset: selectedAsset })

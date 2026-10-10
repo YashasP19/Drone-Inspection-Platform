@@ -3,6 +3,7 @@ import {
   ScanEye, Eye, Shield, Wrench, FileCheck,
   Loader2, MessagesSquare, Sparkles, ChevronDown, ChevronUp, Trash2
 } from "lucide-react";
+import { API_BASE_URL } from "../config";
 
 interface Inspection {
   id: string;
@@ -97,7 +98,7 @@ export default function AIDiscussionView() {
   const [expandedRaw, setExpandedRaw] = useState<string | null>(null);
 
   useEffect(() => {
-    fetch("http://localhost:5001/api/inspections")
+    fetch(`${API_BASE_URL}/api/inspections`)
       .then((res) => res.json())
       .then((data: Inspection[]) => {
         setInspections(data);
@@ -111,7 +112,7 @@ export default function AIDiscussionView() {
     e.stopPropagation();
     if (!confirm("Are you sure you want to delete this AI panel discussion?")) return;
     try {
-      await fetch(`http://localhost:5001/api/inspections/${id}`, { method: "DELETE" });
+      await fetch(`${API_BASE_URL}/api/inspections/${id}`, { method: "DELETE" });
       const updated = inspections.filter((i) => i.id !== id);
       setInspections(updated);
       if (selectedId === id) {
@@ -125,7 +126,7 @@ export default function AIDiscussionView() {
   const handleClearAllConversations = async () => {
     if (!confirm("Are you sure you want to clear ALL AI panel discussions? This action cannot be undone.")) return;
     try {
-      await fetch("http://localhost:5001/api/inspections", { method: "DELETE" });
+      await fetch(`${API_BASE_URL}/api/inspections`, { method: "DELETE" });
       setInspections([]);
       setSelectedId(null);
     } catch (err) {

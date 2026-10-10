@@ -1,0 +1,19 @@
+FROM node:20-alpine
+
+WORKDIR /app
+
+# Install curl for container healthchecks
+RUN apk add --no-cache curl
+
+COPY package*.json ./
+RUN npm ci --omit=dev
+
+COPY server.js ./
+COPY db.json ./
+
+# Ensure persistence and uploads directories exist
+RUN mkdir -p /app/uploads /app/data
+
+EXPOSE 5001
+
+CMD ["node", "server.js"]

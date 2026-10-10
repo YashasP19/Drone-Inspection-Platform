@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Database, Eye, Trash2, Edit2, Plus, X, FolderOpen, Boxes, AlertTriangle, CheckCircle2, CalendarPlus } from "lucide-react";
+import { API_BASE_URL } from "../config";
 
 interface Asset {
   id: string;
@@ -78,7 +79,7 @@ export default function AssetsView({ onInspectAsset }: AssetsViewProps) {
 
   const fetchTeam = async () => {
     try {
-      const res = await fetch("http://localhost:5001/team");
+      const res = await fetch(`${API_BASE_URL}/team`);
       const data = await res.json();
       setTeam(data);
     } catch (err) {
@@ -89,7 +90,7 @@ export default function AssetsView({ onInspectAsset }: AssetsViewProps) {
   const fetchAssets = async () => {
     try {
       setLoading(true);
-      const res = await fetch("http://localhost:5001/assets");
+      const res = await fetch(`${API_BASE_URL}/assets`);
       const data = await res.json();
       setAssets(data);
     } catch (err) {
@@ -133,7 +134,7 @@ export default function AssetsView({ onInspectAsset }: AssetsViewProps) {
   const handleDelete = async (id: string) => {
     if (!confirm("Are you sure you want to delete this asset?")) return;
     try {
-      await fetch(`http://localhost:5001/assets/${id}`, { method: "DELETE" });
+      await fetch(`${API_BASE_URL}/assets/${id}`, { method: "DELETE" });
       fetchAssets();
     } catch (err) {
       console.error("Error deleting asset:", err);
@@ -154,18 +155,18 @@ export default function AssetsView({ onInspectAsset }: AssetsViewProps) {
       lng: latLng ? latLng.lng : currentAsset?.lng || null,
       assignedTo: assignedTo || null,
       nextAppointmentDate: nextAppointmentDate ? new Date(nextAppointmentDate).toISOString() : null,
-      thumbnail: currentAsset?.thumbnail || "https://images.unsplash.com/photo-1541888946425-d0fbb186a5b3?auto=format&fit=crop&w=400&q=80",
+      thumbnail: currentAsset?.thumbnail || "/placeholder-asset.svg",
     };
 
     try {
       if (currentAsset?.id) {
-        await fetch(`http://localhost:5001/assets/${currentAsset.id}`, {
+        await fetch(`${API_BASE_URL}/assets/${currentAsset.id}`, {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(payload),
         });
       } else {
-        await fetch("http://localhost:5001/assets", {
+        await fetch(`${API_BASE_URL}/assets`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(payload),

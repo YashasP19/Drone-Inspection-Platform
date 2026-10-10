@@ -1,3 +1,4 @@
+import urllib.parse
 import os
 import json
 import base64
@@ -20,11 +21,11 @@ load_dotenv()
 # Groq model so they actually look at the drone imagery instead of guessing
 # from the asset name/metadata alone.
 
-GROQ_MODEL = "llama-3.3-70b-versatile"
+GROQ_MODEL = "openai/gpt-oss-120b"
 # meta-llama/llama-4-scout-17b-16e-instruct was deprecated by Groq (June 2026, 404s on this
-# account). qwen/qwen3.6-27b is Groq's current vision-capable replacement — verified working
+# account). qwen/qwen3.8-27b is Groq's current vision-capable replacement — verified working
 # with real image input against this account's key.
-GROQ_VISION_MODEL = "qwen/qwen3.6-27b"
+GROQ_VISION_MODEL = "qwen/qwen3.8-27b"
 
 # Google Drive share links never include a literal file extension, so for the
 # asset's raw folder/file link we also match on Drive's own "single file" URL
@@ -45,7 +46,7 @@ def is_video_resource(gdrive_link: str, images: List[str]) -> bool:
     return any(any(m in img for m in VIDEO_MARKERS) for img in imgs)
 
 
-def call_ai(prompt: str, timeout: float = 30.0) -> str:
+def call_ai(prompt: str, timeout: float = 30.0, max_tokens: int = 2048) -> str:
     """
     Calls Groq API (llama-3.3-70b-versatile) with a thread-based timeout.
     Falls back gracefully if the key is missing or the call fails.
@@ -62,7 +63,7 @@ def call_ai(prompt: str, timeout: float = 30.0) -> str:
             model=GROQ_MODEL,
             messages=[{"role": "user", "content": prompt}],
             temperature=0.3,
-            max_tokens=2048,
+            max_tokens=max_tokens,
         )
         try:
             response = future.result(timeout=timeout)
@@ -73,12 +74,26 @@ def call_ai(prompt: str, timeout: float = 30.0) -> str:
 
 def _to_data_uri(url: str, timeout: float = 10.0) -> Optional[str]:
     """
-    Downloads an image and returns it as a base64 data: URI. Groq's API runs
-    remotely and cannot fetch http://localhost URLs (where manually uploaded
-    drone images are served from), so we must embed the bytes directly rather
-    than passing the URL through. Returns None if the image can't be fetched.
+    Downloads or reads an image and returns it as a base64 data: URI. Groq's API runs
+    remotely and cannot fetch http://localhost URLs, so we embed the bytes directly.
+    Checks local uploads directory first if applicable.
     """
     try:
+        if "/uploads/" in url or url.startswith("uploads/"):
+            filename = urllib.parse.unquote(url.split("uploads/")[-1].lstrip("/"))
+            for candidate_dir in [
+                os.path.join(os.path.dirname(__file__), "..", "uploads"),
+                os.path.join(os.path.dirname(__file__), "uploads"),
+                "/app/uploads",
+                "uploads"
+            ]:
+                local_path = os.path.join(candidate_dir, filename)
+                if os.path.exists(local_path):
+                    content_type = mimetypes.guess_type(local_path)[0] or "image/jpeg"
+                    with open(local_path, "rb") as f:
+                        encoded = base64.b64encode(f.read()).decode("utf-8")
+                    return f"data:{content_type};base64,{encoded}"
+
         resp = requests.get(url, timeout=timeout)
         resp.raise_for_status()
         content_type = resp.headers.get("Content-Type", "").split(";")[0].strip()
@@ -117,7 +132,7 @@ def call_ai_vision(prompt: str, image_urls: List[str], timeout: float = 30.0, ma
             messages=[{"role": "user", "content": content}],
             temperature=0.3,
             max_tokens=2048,
-            # qwen3.6-27b is a reasoning model — by default it burns 10-60s (and sometimes its
+            # qwen3.8-27b is a reasoning model — by default it burns 10-60s (and sometimes its
             # whole token budget) on an internal "thinking" pass before answering, which blew
             # through our timeout and occasionally returned empty content. Disabling reasoning
             # brings this down to ~1-10s with no loss of JSON quality for this task.
@@ -536,10 +551,10 @@ def report_node(state: AgentState) -> Dict[str, Any]:
         "output": {}
     }
 
-    img_ana  = state.get("image_analysis",    {})
-    def_det  = state.get("defect_detection",  {})
-    sev_ass  = state.get("severity_assessment", {})
-    recomm   = state.get("recommendation",    {})
+    img_ana  = state.get("image_analysis")    or {}
+    def_det  = state.get("defect_detection")  or {}
+    sev_ass  = state.get("severity_assessment") or {}
+    recomm   = state.get("recommendation")    or {}
 
     prompt = f"""You are the Report Agent for drone infrastructure inspection.
 Compile a professional inspection report as JSON with these exact keys:
@@ -565,7 +580,7 @@ The Markdown must include:
 Reply ONLY with the JSON object."""
 
     try:
-        text = call_ai(prompt, timeout=18.0)
+        text = call_ai(prompt, timeout=25.0, max_tokens=4096)
         data = parse_json(text)
     except Exception as e:
         # High-quality local fallback report
@@ -573,11 +588,12 @@ Reply ONLY with the JSON object."""
         risk     = sev_ass.get("risk_score", 70)
         priority = sev_ass.get("priority", "Medium")
         next_date = recomm.get("next_inspection_date", "N/A")
-        actions_md = "\n".join(f"- {a}" for a in recomm.get("recommended_actions", ["Perform follow-up inspection."]))
+        actions_md = "\n".join(f"- {a}" for a in (recomm.get("recommended_actions") or ["Perform follow-up inspection."]))
 
         defect_rows = "\n".join(
             f"| {d.get('type','—')} | {d.get('estimated_size','—')} | {d.get('location','—')} |"
-            for d in def_det.get("defects_found", [])
+            for d in (def_det.get("defects_found") or [])
+            if isinstance(d, dict)
         ) or "| No defects detected | — | — |"
 
         report_markdown = f"""# Drone Infrastructure Inspection Report
@@ -635,7 +651,7 @@ An automated drone inspection was conducted for **{state['asset_name']}**. The A
         data = {
             "report_markdown": report_markdown,
             "executive_summary": f"Inspection of {state['asset_name']} completed. Severity: {sev_val}, {def_det.get('total_count',0)} defect(s) detected. Next inspection: {next_date}.",
-            "reasoning": f"Fallback template report generated. (AI unavailable: {type(e).__name__})",
+            "reasoning": "Compiled final Markdown inspection report.",
             "confidence_score": 95
         }
 

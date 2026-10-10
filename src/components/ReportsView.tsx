@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { FileText, Download, BarChart3, Eye, X, Trash2, Sparkles, FolderArchive, Layers } from "lucide-react";
+import { API_BASE_URL } from "../config";
 
 interface Report {
   id: string;
@@ -26,7 +27,7 @@ export default function ReportsView() {
   const fetchReports = async () => {
     try {
       setLoading(true);
-      const res = await fetch("http://localhost:5001/api/reports");
+      const res = await fetch(`${API_BASE_URL}/api/reports`);
       if (res.ok) {
         const data = await res.json();
         setReports([...data, ...defaultReports]);
@@ -64,7 +65,7 @@ export default function ReportsView() {
   const handleDeleteReport = async (id: string) => {
     if (!confirm("Are you sure you want to delete this report from the archive?")) return;
     try {
-      await fetch(`http://localhost:5001/api/reports/${id}`, { method: "DELETE" });
+      await fetch(`${API_BASE_URL}/api/reports/${id}`, { method: "DELETE" });
     } catch (err) {
       console.error("Error deleting report:", err);
     }
@@ -77,7 +78,7 @@ export default function ReportsView() {
   const handleClearAllReports = async () => {
     if (!confirm("Are you sure you want to clear ALL reports in this section? This action cannot be undone.")) return;
     try {
-      await fetch("http://localhost:5001/api/reports", { method: "DELETE" });
+      await fetch(`${API_BASE_URL}/api/reports`, { method: "DELETE" });
     } catch (err) {
       console.error("Error clearing reports:", err);
     }

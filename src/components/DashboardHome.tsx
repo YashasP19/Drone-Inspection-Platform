@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Folder, ClipboardCheck, AlertTriangle, MapPin } from "lucide-react";
 import MapOverviewModal from "./MapOverviewModal";
+import { API_BASE_URL, PLACEHOLDER_IMAGE, onImageError } from "../config";
 
 interface DashboardHomeProps {
   onViewAllProjects: () => void;
@@ -41,8 +42,8 @@ export default function DashboardHome({ onViewAllProjects }: DashboardHomeProps)
 
   useEffect(() => {
     Promise.all([
-      fetch("http://localhost:5001/assets").then((r) => r.json()),
-      fetch("http://localhost:5001/api/inspections").then((r) => r.json())
+      fetch(`${API_BASE_URL}/assets`).then((r) => r.json()),
+      fetch(`${API_BASE_URL}/api/inspections`).then((r) => r.json())
     ])
       .then(([assetsData, inspectionsData]) => {
         setAssets(assetsData);
@@ -202,7 +203,7 @@ export default function DashboardHome({ onViewAllProjects }: DashboardHomeProps)
               recentAssets.map((a) => (
                 <div key={a.id} className="flex items-center justify-between p-2.5 rounded-2xl bg-white/50 border border-white/80 hover:bg-white/90 transition-all">
                   <div className="flex items-center space-x-3 min-w-0">
-                    <img src={a.thumbnail} alt="" className="w-10 h-10 rounded-xl object-cover border border-white/80 shadow-sm" />
+                    <img src={a.thumbnail || PLACEHOLDER_IMAGE} onError={onImageError} alt="" className="w-10 h-10 rounded-xl object-cover border border-white/80 shadow-sm" />
                     <div className="truncate">
                       <h4 className="text-xs font-bold text-[#1E1235] truncate">{a.name}</h4>
                       <p className="text-[10px] text-[#5B4B7C] mt-0.5">{a.infrastructureType} • {a.location}</p>

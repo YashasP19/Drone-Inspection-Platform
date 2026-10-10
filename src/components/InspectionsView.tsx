@@ -7,6 +7,7 @@ import {
   FolderOpen
 } from "lucide-react";
 import InteractiveViewer, { type DetectionBox } from "./InteractiveViewer";
+import { API_BASE_URL } from "../config";
 
 function mapSeverity(overallSeverity?: string): DetectionBox["severity"] {
   switch (overallSeverity) {
@@ -167,7 +168,7 @@ export default function InspectionsView({ inspectedAsset, onClearAsset, onSelect
   const fetchInspections = async () => {
     try {
       setLoadingList(true);
-      const res = await fetch("http://localhost:5001/api/inspections");
+      const res = await fetch(`${API_BASE_URL}/api/inspections`);
       const data = await res.json();
       setGeneralChecklist(data);
     } catch { } finally { setLoadingList(false); }
@@ -176,7 +177,7 @@ export default function InspectionsView({ inspectedAsset, onClearAsset, onSelect
   const handleDeleteInspection = async (id: string) => {
     if (!confirm("Are you sure you want to delete this inspection record?")) return;
     try {
-      await fetch(`http://localhost:5001/api/inspections/${id}`, { method: "DELETE" });
+      await fetch(`${API_BASE_URL}/api/inspections/${id}`, { method: "DELETE" });
       fetchInspections();
     } catch (err) {
       console.error("Error deleting inspection:", err);
@@ -186,7 +187,7 @@ export default function InspectionsView({ inspectedAsset, onClearAsset, onSelect
   const handleClearAllInspections = async () => {
     if (!confirm("Are you sure you want to clear ALL inspection records? This action cannot be undone.")) return;
     try {
-      await fetch("http://localhost:5001/api/inspections", { method: "DELETE" });
+      await fetch(`${API_BASE_URL}/api/inspections`, { method: "DELETE" });
       setGeneralChecklist([]);
     } catch (err) {
       console.error("Error clearing inspections:", err);
@@ -205,7 +206,7 @@ export default function InspectionsView({ inspectedAsset, onClearAsset, onSelect
     const formData = new FormData();
     for (let i = 0; i < files.length; i++) formData.append("files", files[i]);
     try {
-      const res = await fetch("http://localhost:5001/api/uploads", { method: "POST", body: formData });
+      const res = await fetch(`${API_BASE_URL}/api/uploads`, { method: "POST", body: formData });
       const data = await res.json();
       if (data.urls) setManualImages(prev => [...prev, ...data.urls]);
     } catch (err) {
@@ -251,7 +252,7 @@ ${manualImages.length > 0 ? `\n## Uploaded Images\n${manualImages.map(u => `- ${
 `;
 
     try {
-      const res = await fetch("http://localhost:5001/api/inspections/save", {
+      const res = await fetch(`${API_BASE_URL}/api/inspections/save`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -293,7 +294,7 @@ ${manualImages.length > 0 ? `\n## Uploaded Images\n${manualImages.map(u => `- ${
   useEffect(() => {
     if (!inspectedAsset) {
       fetchInspections();
-      fetch("http://localhost:5001/assets")
+      fetch(`${API_BASE_URL}/assets`)
         .then(res => res.json())
         .then(data => setAllAssets(data))
         .catch(err => console.error("Error fetching assets:", err));
@@ -323,7 +324,7 @@ ${manualImages.length > 0 ? `\n## Uploaded Images\n${manualImages.map(u => `- ${
     const formData = new FormData();
     for (let i = 0; i < files.length; i++) formData.append("files", files[i]);
     try {
-      const res = await fetch("http://localhost:5001/api/uploads", { method: "POST", body: formData });
+      const res = await fetch(`${API_BASE_URL}/api/uploads`, { method: "POST", body: formData });
       const data = await res.json();
       if (data.urls) {
         setUploadedImages(prev => [...prev, ...data.urls]);
@@ -337,7 +338,7 @@ ${manualImages.length > 0 ? `\n## Uploaded Images\n${manualImages.map(u => `- ${
     if (!inspectedAsset?.gDriveLink) return;
     setImportingFromDrive(true);
     try {
-      const res = await fetch(`http://localhost:5001/api/gdrive-images?link=${encodeURIComponent(inspectedAsset.gDriveLink)}`);
+      const res = await fetch(`${API_BASE_URL}/api/gdrive-images?link=${encodeURIComponent(inspectedAsset.gDriveLink)}`);
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Failed to import from Google Drive");
       const urls = (data.images || []).map((f: { url: string }) => f.url);
@@ -384,7 +385,7 @@ ${manualImages.length > 0 ? `\n## Uploaded Images\n${manualImages.map(u => `- ${
     setYoloCrackDetections(null);
 
     try {
-      const res = await fetch("http://localhost:5001/api/inspections/stream", {
+      const res = await fetch(`${API_BASE_URL}/api/inspections/stream`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -470,7 +471,7 @@ ${manualImages.length > 0 ? `\n## Uploaded Images\n${manualImages.map(u => `- ${
     const reportMarkdown = finalState.report?.report_markdown || "";
     const nextInspectionDate = finalState.recommendation?.next_inspection_date || "2026-12-31";
     try {
-      const res = await fetch("http://localhost:5001/api/inspections/save", {
+      const res = await fetch(`${API_BASE_URL}/api/inspections/save`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -496,7 +497,7 @@ ${manualImages.length > 0 ? `\n## Uploaded Images\n${manualImages.map(u => `- ${
     if (uploadedImages.length === 0) return;
     setYoloDetecting(true);
     try {
-      const res = await fetch("http://localhost:5001/api/inspections/detect-crack", {
+      const res = await fetch(`${API_BASE_URL}/api/inspections/detect-crack`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ imageUrl: uploadedImages[0] })

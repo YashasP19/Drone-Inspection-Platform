@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 260">
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#2E1A5E"/><stop offset="1" stop-color="#0F091F"/>
+    </linearGradient>
+  </defs>
+  <rect width="400" height="260" fill="url(#g)"/>
+  <g stroke="#A78BFA" stroke-width="3" fill="none" stroke-linecap="round" opacity=".85">
+    <path d="M30 150h340"/>
+    <path d="M60 150V110M120 150V90M200 150V80M280 150V90M340 150V110"/>
+    <path d="M60 110Q200 40 340 110"/>
+    <path d="M30 175h340" opacity=".5"/>
+  </g>
+  <text x="200" y="215" text-anchor="middle" font-family="system-ui,sans-serif" font-size="14" fill="#C4B5FD">No drone image yet</text>
+</svg>

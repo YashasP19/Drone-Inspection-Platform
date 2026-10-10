@@ -14,7 +14,18 @@ const __dirname = path.dirname(__filename);
 
 const app = express();
 const PORT = process.env.PORT || 5001;
-const DB_FILE = path.join(__dirname, "db.json");
+const DB_FILE = process.env.DB_FILE || path.join(__dirname, "db.json");
+const PYTHON_SERVICE_URL = (process.env.PYTHON_SERVICE_URL || "http://localhost:8000").replace(/\/$/, "");
+
+const getUploadUrl = (filename) => {
+  if (process.env.PUBLIC_URL) {
+    return `${process.env.PUBLIC_URL.replace(/\/$/, "")}/uploads/${encodeURIComponent(filename)}`;
+  }
+  if (process.env.NODE_ENV === "production") {
+    return `/uploads/${encodeURIComponent(filename)}`;
+  }
+  return `http://localhost:${PORT}/uploads/${encodeURIComponent(filename)}`;
+};
 
 app.use(cors());
 app.use(express.json());
@@ -37,6 +48,10 @@ const upload = multer({ storage });
 // Helper function to read database
 const readDB = () => {
   try {
+    const dbDir = path.dirname(DB_FILE);
+    if (!fs.existsSync(dbDir)) {
+      fs.mkdirSync(dbDir, { recursive: true });
+    }
     if (!fs.existsSync(DB_FILE)) {
       // Default seed data
       const defaultAssets = [
@@ -128,6 +143,10 @@ const readDB = () => {
 // Helper function to write to database
 const writeDB = (data) => {
   try {
+    const dbDir = path.dirname(DB_FILE);
+    if (!fs.existsSync(dbDir)) {
+      fs.mkdirSync(dbDir, { recursive: true });
+    }
     fs.writeFileSync(DB_FILE, JSON.stringify(data, null, 2));
   } catch (err) {
     console.error("Error writing database file", err);
@@ -221,7 +240,7 @@ app.get("/api/gdrive-images", async (req, res) => {
       const ext = path.extname(f.name) || extFromMime(f.mimeType);
       const filename = `${Date.now()}-gdrive-${f.id}${ext}`;
       fs.writeFileSync(path.join(uploadDir, filename), buffer);
-      return { name: f.name, url: `http://localhost:5001/uploads/${filename}` };
+      return { name: f.name, url: getUploadUrl(filename) };
     }));
 
     res.json({ images });
@@ -261,7 +280,7 @@ app.post("/assets", async (req, res) => {
     name,
     infrastructureType,
     location,
-    thumbnail: thumbnail || "https://images.unsplash.com/photo-1541888946425-d81bb19240f5?auto=format&fit=crop&w=150&q=80",
+    thumbnail: thumbnail || "/placeholder-asset.svg",
     inspectionPageId: inspectionPageId || "custom-inspect-id",
     gDriveLink: gDriveLink || "",
     mapLink: mapLink || "",
@@ -826,7 +845,7 @@ Return ONLY a valid JSON object matching this schema:
 app.post("/api/uploads", upload.array("files"), (req, res) => {
   try {
     const files = req.files || [];
-    const urls = files.map(file => `http://localhost:5001/uploads/${file.filename}`);
+    const urls = files.map(file => getUploadUrl(file.filename));
     res.json({ urls });
   } catch (err) {
     res.status(500).json({ error: "Failed to upload files: " + err.message });
@@ -857,7 +876,7 @@ app.post("/api/inspections/stream", async (req, res) => {
 
   try {
     // Send POST to python LangGraph service streaming endpoint
-    const response = await fetch("http://localhost:8000/inspect/stream", {
+    const response = await fetch(`${PYTHON_SERVICE_URL}/inspect/stream`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -903,7 +922,7 @@ app.post("/api/inspections/detect-crack", async (req, res) => {
   }
 
   try {
-    const response = await fetch("http://localhost:8000/detect/crack", {
+    const response = await fetch(`${PYTHON_SERVICE_URL}/detect/crack`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ image_url: imageUrl })

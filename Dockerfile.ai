@@ -1,0 +1,27 @@
+FROM python:3.11-slim
+
+# Install system dependencies required for OpenCV, PyTorch & YOLO
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libgl1 \
+    libglib2.0-0 \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+# Upgrade pip and install Python requirements
+COPY langgraph_service/requirements.txt ./
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Copy service code
+COPY langgraph_service/ ./
+
+# Pre-download YOLO weights if not already present
+RUN python download_models.py
+
+# Ensure shared uploads directory exists
+RUN mkdir -p /app/uploads
+
+EXPOSE 8000
+
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
